@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Imtihon tizimi</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* =========================
+           RESET & GLOBAL
+        ========================== */
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --primary-color: #6366f1; /* Indigo-500 */
+            --primary-light: #818cf8; /* Indigo-400 */
+            --secondary-color: #f87171; /* Red-400 */
+            --success-color: #10b981; /* Emerald-500 */
+            --bg-color: #f1f5f9; /* Slate-100 */
+            --text-color: #1e293b; /* Slate-800 */
+            --card-bg: #fff;
+            --border-color: #e2e8f0; /* Slate-200 */
+        }
+        body{
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* =========================
+           GLOBAL PAGE STYLE
+        ========================== */
+        .page{display:none;flex-direction:column;height:100%;}
+        .page.active{display:flex}
+
+        /* =========================
+           HEADER (YANGI DIZAYN)
+        ========================== */
+        .header{
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+            color: #fff;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+
+        .back-btn{
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            line-height: 1;
+        }
+
+        /* =========================
+           MAIN CONTENT AREA
+        ========================== */
+        .content-area{
+            flex: 1;
+            overflow-y: auto;
+            padding: 0; /* Butunlay PDF qoplab turishi uchun padding olib tashlandi */
+        }
+        
+        /* === PDF QISMI YANADA KATTALASHTIRILDI === */
+        .pdf{
+            flex: 1; /* Kontent maydonida qolgan barcha bo'shliqni egallaydi */
+            overflow: auto;
+            background: var(--card-bg);
+            /* Minimal balandlik berish shart emas, chunki flex 1 ishlaydi */
+        }
+        .pdf embed{
+            width: 100%;
+            height: 100%;
+            border: none;
+            pointer-events: auto;
+            /* mobil PDF toolbarni o‘chirish */
+            -webkit-media-controls-enclosure { display:none !important; }
+            -webkit-media-controls-panel { display:none !important; }
+        }
+        /* Admin va Student Test sahifasi uchun tartibni o'zgartiramiz */
+        #create-2, #student-test {
+            display: flex;
+            flex-direction: column;
+            height: 100vh; /* Umumiy balandlik */
+        }
+        
+        /* PDF va javob tanlash qismini tartiblash */
+        #create-2 > .pdf, #student-test > .pdf {
+            flex-grow: 1; /* Ko'proq joy egallasin */
+            height: auto; /* Balandlikni flex boshqarsin */
+            padding: 8px; /* Ichki PDF uchun biroz padding */
+        }
+        
+        /* Javob tanlash kartochkasini ixcham qilish va pastga mahkamlash */
+        #create-2 > .card, #student-test > .card {
+            margin: 0;
+            padding: 12px 16px;
+            border-radius: 0;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+            flex-shrink: 0;
+        }
+
+
+        /* =========================
+           BUTTONS & FORM ELEMENTS
+        ========================== */
+        .btn{
+            display: block;
+            width: calc(100% - 32px);
+            margin: 12px 16px;
+            padding: 16px 20px;
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+            transition: all 0.2s ease;
+        }
+        .btn:active{transform: translateY(1px);}
+        .btn.red{background: var(--secondary-color); box-shadow: 0 4px 15px rgba(248, 113, 113, 0.4);}
+        .btn.green{background: var(--success-color); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);}
+        .btn.small{
+            display: inline-block;
+            width: auto;
+            padding: 10px 16px;
+            font-size: 15px;
+            margin: 6px 0;
+            box-shadow: none;
+        }
+        .btn-group{
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        input:not([type="file"]), select, textarea{
+            width: calc(100% - 32px);
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            margin: 8px 16px;
+            font-size: 16px;
+            background: var(--card-bg);
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus{
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        label{
+            display: block;
+            margin: 16px 16px 6px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .card{
+            background: var(--card-bg);
+            padding: 16px;
+            margin: 12px 0;
+            border-radius: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        /* =========================
+           OPTIONS (A B C D E)
+        ========================== */
+        .opts{
+            display:flex;
+            justify-content:center;
+            gap:10px;
+            padding:10px 0;
+        }
+        .o{
+            width: 50px; height: 50px;
+            border: 3px solid var(--border-color);
+            background: var(--card-bg);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; font-weight: 700;
+            cursor: pointer;
+            transition: all .25s;
+        }
+        .o.square{border-radius: 12px}
+
+        .o.circle.active{
+            background: var(--primary-color); color:#fff; border-color: var(--primary-color);
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .o.square.active{
+            background: var(--success-color); color:#fff; border-color: var(--success-color);
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        /* =========================
+           BOTTOM NAV
+        ========================== */
+        .nav{
+            padding: 12px 16px;
+            background: var(--card-bg);
+            overflow-x: auto;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+            flex-shrink: 0;
+        }
+        .nav::-webkit-scrollbar{display:none;}
+
+        .navs{
+            display: inline-grid;
+            grid-auto-flow: column;
+            grid-auto-columns: 40px;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .n{
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            background: var(--border-color);
+            color: var(--text-color);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .n.active{
+            background: var(--primary-color); color:#fff; transform:scale(1.05);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+        .n.done{background: var(--success-color); color:#fff}
+        .n.wrong{background: var(--secondary-color); color:#fff}
+
+        /* =========================
+           ADMIN TOOLS
+        ========================== */
+        .admin-tools{
+            display: flex; justify-content: center; gap: 18px; margin: 14px 0
+        }
+        .tool{
+            width: 55px; height: 55px; border-radius: 50%;
+            background: var(--card-bg); border: 3px solid var(--border-color);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: .2s
+        }
+        .tool.active{
+            border-color: var(--primary-color); background: #eef2ff;
+        }
+
+        .result-grid{
+            display: grid;
+            grid-template-columns: repeat(auto-fit,minmax(40px,1fr));
+            gap: 10px; margin: 20px 0;
+            padding: 0 16px;
+        }
+        
+        #test-created .card{
+            margin: 20px 16px;
+            text-align: left;
+        }
+        
+        /* Text input/button ichki stilizatsiyasi */
+        #admin-textbox, #s-textbox {
+             padding: 0 16px;
+             margin-top: 12px;
+        }
+        #admin-textbox input, #s-textbox input {
+            width: 100%; 
+            margin: 0 0 8px 0;
+        }
+        #admin-textbox button, #s-textbox button {
+            width: 100%; 
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<div id="start" class="page active">
+    <div class="header">Imtihon tizimi</div>
+    <div style="flex:1;padding:30px;text-align:center" class="content-area">
+        <h2 style="margin-bottom:30px; margin-top: 10vh; font-size: 24px;">Assalomu alaykum! 👋</h2>
+        <input type="text" id="code-input" placeholder="Imtihon kodi (masalan: 123456)">
+        <button class="btn" onclick="enterByCode()">Kirish</button>
+        <button class="btn red" onclick="adminLogin()">O‘qituvchi kirishi (Telegram ID)</button>
+    </div>
+</div>
+
+<div id="admin-dash" class="page">
+    <div class="header"><button class="back-btn" onclick="logout()"><i class="fa-solid fa-angle-left"></i></button>Mening imtihonlarim</div>
+    <div id="tests-list" class="content-area" style="padding:16px 16px;"></div>
+    <button class="btn" onclick="go('create-1')">+ Yangi imtihon yaratish</button>
+</div>
+
+<div id="create-1" class="page">
+    <div class="header"><button class="back-btn" onclick="go('admin-dash')"><i class="fa-solid fa-angle-left"></i></button>Yangi imtihon</div>
+    <div class="content-area" style="padding: 16px;">
+        <div class="card">
+            <label>Imtihon nomi</label>
+            <input type="text" id="test-name" style="width: calc(100% - 32px); margin: 8px 0;">
+            <label>Umumiy material (PDF)</label>
+            <input type="file" accept=".pdf" id="test-pdf" style="margin: 8px 0;">
+            <label>Javob variantlari</label>
+            <select id="answers-count" style="width: calc(100% - 32px); margin: 8px 0;"><option value="4">4 ta (A-D)</option><option value="5" selected>5 ta (A-E)</option></select>
+            <label>Savollar soni</label>
+            <input type="number" id="q-count" value="30" min="5" max="200" style="width: calc(100% - 32px); margin: 8px 0;">
+            <button class="btn" onclick="nextStep()" style="width:100%; margin: 16px 0 0 0;">Keyingi qadam <i class="fa-solid fa-angle-right"></i></button>
+        </div>
+    </div>
+</div>
+
+<div id="create-2" class="page">
+    <div class="header"><button class="back-btn" onclick="go('admin-dash')"><i class="fa-solid fa-angle-left"></i></button>To‘g‘ri javoblarni belgilang</div>
+    
+    <div class="pdf"><embed id="admin-pdf"></div>
+    
+    <div class="card">
+        <div style="text-align:center;font-weight:700;margin-bottom:10px">Savol <span id="admin-q">1</span></div>
+        <div class="admin-tools">
+            <div class="tool active" onclick="setType('single', this)"><i class="fa-regular fa-circle-check"></i></div>
+            <div class="tool" onclick="setType('multiple', this)"><i class="fa-regular fa-square-check"></i></div>
+            <div class="tool" onclick="setType('text', this)"><i class="fa-solid fa-pen-fancy"></i></div>
+        </div>
+        <div class="opts" id="admin-opts"></div>
+        <div id="admin-textbox" style="display:none;">
+            <input type="text" id="admin-text" placeholder="To‘g‘ri javobni yozing...">
+            <button class="btn green" onclick="saveTextAnswer()">Saqlash</button>
+        </div>
+    </div>
+    <div class="nav">
+        <div class="navs" id="admin-nav"></div>
+        <button class="btn red small" onclick="saveTest()">SAQLASH</button>
+    </div>
+</div>
+
+<div id="student-test" class="page">
+    <div class="header">Savol: <span id="s-q">1</span> / <span id="s-total">30</span></div>
+    
+    <div class="pdf"><embed id="student-pdf"></div>
+    
+    <div class="card">
+        <p style="font-weight: 600; margin-bottom: 10px; text-align: center;">Javobingizni tanlang:</p>
+        <div class="opts" id="s-opts"></div>
+        <div id="s-textbox" style="display:none;">
+            <input type="text" id="s-text" placeholder="Javobingizni yozing...">
+            <button class="btn" onclick="saveStudentText()">Saqlash</button>
+        </div>
+    </div>
+    <div class="nav">
+        <div class="navs" id="s-nav"></div>
+        <button class="btn red small" onclick="finishTest()">Tugatish</button>
+    </div>
+</div>
+
+<div id="student-result" class="page">
+    <div class="header">Sizning natijangiz 🏆</div>
+    <div style="flex:1;text-align:center;padding:30px">
+        <h1 style="font-size:72px;margin:20px 0; color: var(--primary-color);" id="perc">87%</h1>
+        <p style="font-size:18px; margin-bottom: 20px;">To‘g‘ri: <b id="cor">26</b> • Xato: <b id="wr">4</b></p>
+        <h3 style="margin-bottom: 15px;">Savollar bo'yicha javoblar:</h3>
+        <div class="result-grid" id="result-grid"></div>
+        <button class="btn" onclick="go('start')" style="margin-top: 30px;">Bosh sahifa</button>
+    </div>
+</div>
+
+<div id="admin-results" class="page">
+    <div class="header"><button class="back-btn" onclick="go('admin-dash')"><i class="fa-solid fa-angle-left"></i></button>Natijalar</div>
+    <div class="content-area" id="results-list" style="padding:16px 16px;"></div>
+</div>
+
+<div id="test-created" class="page">
+    <div class="header">Imtihon yaratildi! 🎉</div>
+    <div style="flex:1;padding:30px;text-align:center">
+        <h2 style="font-size: 24px; margin-bottom: 20px;">Test muvaffaqiyatli yaratildi</h2>
+        <div class="card" style="text-align:left">
+            <p style="margin-bottom: 8px;"><b>Nomi:</b> <span id="created-name"></span></p>
+            <p style="margin-bottom: 15px;"><b>Kod:</b> <span id="created-code" style="font-size: 1.2em; color: var(--primary-color); font-weight: 700;"></span></p>
+            <p><b>Link:</b> <input id="created-link" style="width:100%; margin:8px 0 0 0;" readonly></p>
+        </div>
+        <button class="btn green" onclick="copyLink()">Linkni nusxalash</button>
+        <button class="btn" onclick="go('admin-dash')">Mening imtihonlarim</button>
+    </div>
+</div>
+
+<script>
+    let isAdmin = false;
+    let currentTest = null;
+    let studentAnswers = {};
+    let testData = null;
+    let answerType = 'single';
+    // ADMIN ID: Bu yerda sizning Telegram ID'ingiz bo'lishi kerak.
+    const adminId = '123456789'; // Masalan, bitta admin ID'si
+
+    function getUserId() {
+        // Haqiqiy Telegram WebApp'da ishlatiladigan joyi:
+        return window.Telegram?.WebApp?.initDataUnsafe?.user?.id?.toString() || 'anon';
+    }
+    
+    function go(p){
+        document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+        document.getElementById(p).classList.add('active');
+        // Sahifa o'zgarishi bilan scrollni tepaga olib chiqish
+        // PDF qoplagan sahifalarda content-area skrolli emas, balki PDF skrolli kerak
+        if(p === 'create-2' || p === 'student-test'){
+             document.querySelector(`#${p} .pdf`)?.scrollTo(0, 0);
+        } else {
+             document.querySelector('.page.active .content-area')?.scrollTo(0, 0);
+        }
+    }
+
+    // Admin login (Telegram ID tekshiruvi)
+    function adminLogin(){
+        const userId = getUserId();
+        
+        if(userId === 'anon'){
+             // WebApp topilmasa, test rejimida ishlash uchun ogohlantirish
+             Swal.fire('Xato','Telegram ID topilmadi. Iltimos, bot orqali kirishga urinib ko‘ring.','error');
+             return;
+        }
+
+        if(userId === adminId){
+            isAdmin = true;
+            go('admin-dash');
+            loadTests();
+        } else {
+            Swal.fire({
+                title: 'Ruxsat yo‘q',
+                text: 'Siz admin emassiz.',
+                icon: 'error',
+                confirmButtonText: 'Tushundim'
+            });
+        }
+    }
+    function logout(){ isAdmin=false; go('start'); }
+
+    // 1-qadam → 2-qadam
+    function nextStep(){
+        const name = document.getElementById('test-name').value.trim();
+        const file = document.getElementById('test-pdf').files[0];
+        const qcount = parseInt(document.getElementById('q-count').value);
+        const acount = parseInt(document.getElementById('answers-count').value);
+
+        if(!name || !file || qcount<2 || qcount>200){ 
+            Swal.fire('Xato','Imtihon nomini kiriting, PDF faylini yuklang va savollar sonini 2-200 oralig‘ida belgilang.','warning'); 
+            return; 
+        }
+
+        const reader = new FileReader();
+        reader.onload = e => {
+            currentTest = {
+                id: Date.now(),
+                name, pdf: e.target.result,
+                questions: qcount, variants: acount,
+                answers: Array.from({length: qcount}, (_, i) => ({ q: i + 1, type: 'single', correct: null })), 
+                code: Math.floor(100000 + Math.random()*900000).toString(),
+                results: []
+            };
+            document.getElementById('admin-pdf').src = currentTest.pdf;
+            buildNav('admin-nav', qcount, n=>adminGoto(n));
+            go('create-2');
+            document.querySelector('#create-2 .tool').classList.add('active');
+            adminGoto(1);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function setType(t, element){
+        answerType = t;
+        document.querySelectorAll('.tool').forEach(x=>x.classList.remove('active'));
+        element.classList.add('active');
+        const qIndex = +document.getElementById('admin-q').textContent - 1;
+        currentTest.answers[qIndex].type = t;
+        currentTest.answers[qIndex].correct = null; 
+        adminGoto(qIndex + 1);
+    }
+
+    function adminGoto(n){
+        const qIndex = n - 1;
+        document.querySelectorAll('#admin-nav .n').forEach(x=>x.classList.remove('active'));
+        document.querySelectorAll('#admin-nav .n')[qIndex].classList.add('active');
+        document.getElementById('admin-q').textContent = n;
+        
+        const qData = currentTest.answers[qIndex];
+        answerType = qData.type; 
+
+        document.querySelectorAll('.tool').forEach(x=>x.classList.remove('active'));
+        document.querySelector(`.tool[onclick*="${answerType}"]`).classList.add('active');
+        
+        const opts = document.getElementById('admin-opts'); opts.innerHTML='';
+        const textbox = document.getElementById('admin-textbox');
+        
+        if(answerType === 'text'){
+            opts.style.display = 'none';
+            textbox.style.display = 'block';
+            document.getElementById('admin-text').value = qData.correct||'';
+        } else {
+            opts.style.display = 'flex';
+            textbox.style.display = 'none';
+            
+            'ABCDE'.slice(0,currentTest.variants).split('').forEach(l=>{
+                const d=document.createElement('div');
+                d.className=`o ${answerType==='single'?'circle':'square'}`;
+                d.textContent=l;
+                d.onclick=()=>{ 
+                    if(answerType==='single') opts.querySelectorAll('.o').forEach(x=>x.classList.remove('active')); 
+                    d.classList.toggle('active'); 
+                    saveAdmin(n); 
+                };
+                
+                const currentCorrect = qData.correct;
+                if((Array.isArray(currentCorrect) && currentCorrect.includes(l)) || currentCorrect === l) {
+                    d.classList.add('active');
+                }
+                opts.appendChild(d);
+            });
+        }
+        document.querySelector('#create-2 .pdf').scrollTo(0, 0);
+    }
+
+    function saveAdmin(n){
+        const qIndex = n - 1;
+        const sel = [...document.querySelectorAll('#admin-opts .o.active')].map(x=>x.textContent);
+        
+        currentTest.answers[qIndex].correct = answerType==='single' ? sel[0] : sel;
+        
+        const navItem = document.querySelectorAll('#admin-nav .n')[qIndex];
+        if(currentTest.answers[qIndex].correct && currentTest.answers[qIndex].correct.length > 0){
+             navItem.classList.add('done');
+        } else {
+            navItem.classList.remove('done');
+        }
+    }
+    
+    function saveTextAnswer(){
+        const n = +document.getElementById('admin-q').textContent;
+        const qIndex = n - 1;
+        const val = document.getElementById('admin-text').value.trim();
+        
+        currentTest.answers[qIndex].correct = val;
+        
+        const navItem = document.querySelectorAll('#admin-nav .n')[qIndex];
+        if(val.length > 0){
+            navItem.classList.add('done');
+        } else {
+            navItem.classList.remove('done');
+        }
+    }
+
+    function saveTest(){
+        let tests = JSON.parse(localStorage.getItem('tests')||'[]');
+        
+        const unanswered = currentTest.answers.filter(a => !a.correct || (Array.isArray(a.correct) && a.correct.length === 0));
+        if(unanswered.length > 0){
+            Swal.fire('Ogohlantirish','Barcha savollarning to‘g‘ri javoblarini belgilash shart! Qolgan savol soni: '+unanswered.length,'warning');
+            return;
+        }
+
+        tests.push(currentTest);
+        localStorage.setItem('tests', JSON.stringify(tests));
+
+        document.getElementById('created-name').textContent = currentTest.name;
+        document.getElementById('created-code').textContent = currentTest.code;
+        document.getElementById('created-link').value = `https://t.me/Imtihonoluvchi01bot?start=test_${currentTest.id}`;
+        go('test-created');
+    }
+
+    function loadTests(){
+        const list = document.getElementById('tests-list'); list.innerHTML='';
+        const tests = JSON.parse(localStorage.getItem('tests')||'[]');
+        if(tests.length === 0) {
+            list.innerHTML = '<p style="text-align:center; padding: 50px 16px; color: #64748b;">Hali imtihon yaratilmagan.</p>';
+            return;
+        }
+        
+        tests.reverse().forEach(t=>{ 
+            const div=document.createElement('div'); div.className='card';
+            div.innerHTML = `
+                <h3 style="margin-bottom: 5px; color: var(--primary-color);">${t.name}</h3>
+                <p style="margin-bottom: 10px;">${t.questions} savol • Kod: <b style="color: var(--secondary-color);">${t.code}</b></p>
+                <div class="btn-group">
+                    <button class="btn small green" onclick="showResults(${t.id})">Natijalar (${t.results.length})</button>
+                    <button class="btn small" onclick="share(${t.id})">Ulashish</button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    function share(id){
+        const test = JSON.parse(localStorage.getItem('tests')||'[]').find(t=>t.id==id);
+        const link = `https://t.me/Imtihonoluvchi01bot?start=test_${id}`;
+            Swal.fire({
+                title: test.name,
+                html: `
+                    <p style="margin-bottom: 15px;">Kod: <b>${test.code}</b></p>
+                    <input id="test-link-input" value="${link}" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--border-color);font-size:14px" readonly>
+                `,
+                icon: 'info',
+                confirmButtonText: 'Linkni nusxalash',
+                showCancelButton: true,
+                cancelButtonText: 'Yopish',
+                preConfirm: () => {
+                    const input = document.getElementById('test-link-input');
+                    input.select();
+                    document.execCommand('copy');
+                    Swal.fire('Nusxalandi!', '', 'success');
+                }
+            });
+        }
+
+    function enterByCode(){
+        const code = document.getElementById('code-input').value.trim();
+        const tests = JSON.parse(localStorage.getItem('tests')||'[]');
+        const test = tests.find(t=>t.code===code);
+        if(test) startTest(test);
+        else Swal.fire('Xato','Kod topilmadi!','error');
+    }
+
+    function startTest(t){
+        testData = t;
+        document.getElementById('student-pdf').src = t.pdf;
+        document.getElementById('s-total').textContent = t.questions;
+        studentAnswers = {};
+        buildNav('s-nav', t.questions, n=>studentGoto(n));
+        go('student-test');
+        studentGoto(1);
+    }
+
+    function studentGoto(n){
+        document.querySelectorAll('#s-nav .n').forEach(x=>x.classList.remove('active'));
+        document.querySelectorAll('#s-nav .n')[n-1].classList.add('active');
+        document.getElementById('s-q').textContent = n;
+        loadStudentQ(n);
+        document.querySelector('#student-test .pdf').scrollTo(0, 0);
+    }
+
+    function loadStudentQ(n){
+        const qIndex = n - 1;
+        const qData = testData.answers[qIndex];
+        const opts = document.getElementById('s-opts'); opts.innerHTML='';
+        const textbox = document.getElementById('s-textbox');
+        
+        if(qData.type === 'text'){
+            opts.style.display = 'none';
+            textbox.style.display = 'block';
+            document.getElementById('s-text').value = studentAnswers[n]||'';
+        } else {
+            opts.style.display = 'flex';
+            textbox.style.display = 'none';
+
+            'ABCDE'.slice(0,testData.variants).split('').forEach(l=>{
+                const d=document.createElement('div');
+                d.className=`o ${qData.type==='multiple'?'square':'circle'}`;
+                d.textContent=l;
+                d.onclick=()=>{ 
+                    if(qData.type==='single') opts.querySelectorAll('.o').forEach(x=>x.classList.remove('active')); 
+                    d.classList.toggle('active'); 
+                    saveStudent(n, qData.type); 
+                };
+                
+                const studentAns = studentAnswers[n];
+                if(studentAns && (Array.isArray(studentAns)?studentAns.includes(l):studentAns===l)) {
+                    d.classList.add('active');
+                }
+                opts.appendChild(d);
+            });
+        }
+    }
+
+    function saveStudent(n, type){
+        const sel = [...document.querySelectorAll('#s-opts .o.active')].map(x=>x.textContent);
+        studentAnswers[n] = type === 'multiple' ? sel : sel[0];
+        
+        const navItem = document.querySelectorAll('#s-nav .n')[n-1];
+        if(studentAnswers[n] && (Array.isArray(studentAnswers[n]) ? studentAnswers[n].length > 0 : studentAnswers[n] !== undefined)){
+            navItem.classList.add('done');
+        } else {
+            navItem.classList.remove('done');
+        }
+    }
+    
+    function saveStudentText(){
+        const n = +document.getElementById('s-q').textContent;
+        const val = document.getElementById('s-text').value.trim();
+        studentAnswers[n] = val;
+        
+        const navItem = document.querySelectorAll('#s-nav .n')[n-1];
+        if(val.length > 0){
+            navItem.classList.add('done');
+        } else {
+            navItem.classList.remove('done');
+        }
+    }
+
+    function finishTest(){
+        const answeredCount = Object.keys(studentAnswers).filter(k => {
+            const val = studentAnswers[k];
+            return val !== undefined && val !== null && (Array.isArray(val) ? val.length > 0 : val.toString().trim().length > 0);
+        }).length;
+
+        if(answeredCount < testData.questions){
+            Swal.fire({
+                title:'Testni yakunlaysizmi?',
+                text: `${testData.questions - answeredCount} ta savolga javob berilmadi.`,
+                icon: 'warning',
+                showCancelButton:true,
+                confirmButtonText: 'Ha, tugatish',
+                cancelButtonText: 'Yo‘q, davom etish'
+            }).then(r=>{
+                if(r.isConfirmed) processFinishTest();
+            });
+        } else {
+            Swal.fire({
+                title:'Testni tugatish?',
+                showCancelButton:true,
+                confirmButtonText: 'Tugatish',
+                cancelButtonText: 'Bekor qilish'
+            }).then(r=>{
+                if(r.isConfirmed) processFinishTest();
+            });
+        }
+    }
+
+    function processFinishTest(){
+        let correctCount = 0;
+        testData.answers.forEach(qData => {
+            const q = qData.q;
+            const studentAns = studentAnswers[q];
+            const correctAns = qData.correct;
+            let isCorrect = false;
+
+            if(qData.type === 'text'){
+                if(studentAns && correctAns && studentAns.toLowerCase() === correctAns.toLowerCase()) {
+                    isCorrect = true;
+                }
+            } else {
+                let sAns = Array.isArray(studentAns) ? [...studentAns].sort() : studentAns;
+                let cAns = Array.isArray(correctAns) ? [...correctAns].sort() : correctAns;
+                
+                if(JSON.stringify(sAns) === JSON.stringify(cAns)) {
+                    isCorrect = true;
+                }
+            }
+            if(isCorrect) correctCount++;
+        });
+        
+        const perc = Math.round(correctCount / testData.questions * 100);
+
+        const user = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
+        const userInfo = {
+            id: getUserId(),
+            name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Ismsiz',
+            username: user.username ? '@'+user.username : 'Username yo‘q',
+            correct: correctCount,
+            wrong: testData.questions - correctCount,
+            percentage: perc,
+            date: new Date().toLocaleString('uz-UZ')
+        };
+
+        testData.results = testData.results || [];
+        const idx = testData.results.findIndex(x=>x.id===userInfo.id);
+        if(idx>-1) testData.results[idx] = userInfo; 
+        else testData.results.push(userInfo);
+
+        let all = JSON.parse(localStorage.getItem('tests')||'[]');
+        const ti = all.findIndex(x=>x.id===testData.id);
+        all[ti] = testData;
+        localStorage.setItem('tests', JSON.stringify(all));
+
+        document.getElementById('perc').textContent = perc+'%';
+        document.getElementById('cor').textContent = correctCount;
+        document.getElementById('wr').textContent = testData.questions - correctCount;
+        
+        const g = document.getElementById('result-grid'); g.innerHTML='';
+        for(let i=1;i<=testData.questions;i++){
+            const d=document.createElement('div'); d.className='n'; d.textContent=i;
+            const qData = testData.answers[i - 1];
+            const studentAns = studentAnswers[i];
+            const correctAns = qData.correct;
+            let isCorrect = false;
+
+            if(qData.type === 'text'){
+                if(studentAns && correctAns && studentAns.toLowerCase() === correctAns.toLowerCase()){
+                    isCorrect = true;
+                }
+            } else {
+                let sAns = Array.isArray(studentAns) ? [...studentAns].sort() : studentAns;
+                let cAns = Array.isArray(correctAns) ? [...correctAns].sort() : correctAns;
+                if(JSON.stringify(sAns) === JSON.stringify(cAns)) {
+                    isCorrect = true;
+                }
+            }
+            
+            if(studentAns){
+                if(isCorrect) d.classList.add('done');
+                else d.classList.add('wrong');
+            }
+            
+            g.appendChild(d);
+        }
+        go('student-result');
+    }
+
+    function showResults(id){
+        const tests = JSON.parse(localStorage.getItem('tests')||'[]');
+        const test = tests.find(t=>t.id==id);
+        const list = document.getElementById('results-list');
+        
+        if(!test || !test.results?.length){
+            list.innerHTML = '<p style="text-align:center;padding:50px 16px; color: #64748b;">Hali hech kim ishlamagan</p>';
+            go('admin-results');
+            return;
+        }
+        
+        list.innerHTML = `<div class="card" style="margin: 16px 0 12px 0;"><b>Test: ${test.name}</b> • Jami: ${test.results.length} ta natija</div>`;
+        
+        test.results.sort((a,b)=>b.percentage-a.percentage); 
+        
+        test.results.forEach((r,i)=>{
+            const div=document.createElement('div'); div.className='card';
+            div.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <h4 style="color: var(--primary-color);">#${i+1}. ${r.name}</h4>
+                    <span style="font-size: 1.5em; font-weight: 700; color: ${r.percentage >= 80 ? 'var(--success-color)' : r.percentage >= 50 ? 'var(--primary-color)' : 'var(--secondary-color)'};">${r.percentage}%</span>
+                </div>
+                <p style="margin: 5px 0;">${r.username}</p>
+                <p style="font-size: 0.9em;">To‘g‘ri: <b>${r.correct}</b> / ${test.questions}</p>
+                <p style="font-size: 0.8em; color: #64748b; margin-top: 5px;">${r.date}</small>
+            `;
+            list.appendChild(div);
+        });
+        go('admin-results');
+    }
+
+    function buildNav(id, count, fn){
+        const nav=document.getElementById(id); nav.innerHTML='';
+        for(let i=1;i<=count;i++){
+            const b=document.createElement('div'); b.className='n'; b.textContent=i; b.onclick=()=>fn(i); nav.appendChild(b);
+        }
+    }
+
+    function copyLink(){
+        document.getElementById('created-link').select();
+        document.execCommand('copy');
+        Swal.fire('Nusxalandi!','','success');
+    }
+
+    // Telegram WebApp
+    if(window.Telegram?.WebApp){
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+        Telegram.WebApp.setHeaderColor(document.querySelector('.header').style.backgroundColor || '#6366f1');
+        Telegram.WebApp.setBackgroundColor('#f1f5f9');
+    }
+
+    // Link orqali kirish
+    const urlParams = new URLSearchParams(location.search);
+    if(urlParams.get('start')?.startsWith('test_')){
+        const id = urlParams.get('start').split('_')[1];
+        const tests = JSON.parse(localStorage.getItem('tests')||'[]');
+        const t = tests.find(x=>x.id==id);
+        if(t) startTest(t);
+    }
+</script>
+</body>
+</html>
