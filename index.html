@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Imtihon tizimi</title>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,system-ui,sans-serif;background:#f0f4f8;color:#1e293b;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+    .page{display:none;flex-direction:column;height:100%}
+    .page.active{display:flex}
+    .header{padding:16px;background:#4363ff;color:#fff;text-align:center;font-size:19px;font-weight:700;position:relative}
+    .back-btn{position:absolute;left:14px;top:16px;background:none;border:none;color:#fff;font-size:26px;cursor:pointer}
+    .pdf{flex:1;overflow:auto;background:#fff;padding:8px}
+    .pdf embed{width:100%;height:100%;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
+
+    .btn{padding:15px 20px;background:#4363ff;color:#fff;border:none;border-radius:14px;font-size:17px;margin:12px 16px;font-weight:600;cursor:pointer}
+    .btn.red{background:#e11d48}
+    .btn.green{background:#0d9e62}
+    .btn.small{padding:10px 16px;font-size:15px;margin:6px}
+
+    input, select{padding:15px;border:2px solid #e2e8f0;border-radius:14px;margin:8px 16px;font-size:16px;background:#fff}
+    label{display:block;margin:16px 16px 6px;font-weight:600;color:#334155}
+
+    .card{background:#fff;padding:16px;margin:12px;border-radius:16px;box-shadow:0 4px 15px rgba(0,0,0,0.08)}
+
+    .opts{display:flex;justify-content:center;gap:14px;padding:10px}
+    .o{width:52px;height:52px;border:3.5px solid #cbd5e1;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;cursor:pointer;transition:.25s}
+    .o.square{border-radius:15px;position:relative}
+    .o.circle.active{background:#4363ff;color:#fff;border-color:#4363ff;transform:scale(1.15);box-shadow:0 8px 25px rgba(67,99,255,0.4)}
+    .o.square.active{background:#0d9e62;color:#fff;border-color:#0d9e62;transform:scale(1.15);box-shadow:0 8px 25px rgba(13,158,98,0.4)}
+    .o.square.active::after{content:"Check";position:absolute;top:2px;right:6px;font-size:20px}
+
+    .nav{padding:12px 16px;background:#fff;overflow-x:auto;border-top:1px solid #e2e8f0;display:flex;align-items:center;gap:10px}
+    .navs{display:inline-grid;grid-auto-flow:column;grid-auto-columns:40px;gap:9px}
+    .n{width:40px;height:40px;border-radius:12px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;cursor:pointer}
+    .n.active{background:#4363ff;color:#fff;transform:scale(1.1)}
+    .n.done{background:#0d9e62;color:#fff}
+    .n.wrong{background:#e11d48;color:#fff}
+
+    .admin-tools{display:flex;justify-content:center;gap:18px;margin:14px 0}
+    .tool{width:60px;height:60px;border-radius:50%;background:#fff;border:4px solid #cbd5e1;display:flex;align-items:center;justify-content:center;font-size:32px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,0.1);transition:.2s}
+    .tool.active{border-color:#4363ff;background:#eef2ff}
+
+    .result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(40px,1fr));gap:10px;margin:20px 0}
+  </style>
+</head>
+<body>
+
+<!-- 1. Bosh sahifa -->
+<div id="start" class="page active">
+  <div class="header">Imtihon tizimi</div>
+  <div style="flex:1;padding:30px;text-align:center">
+    <h2 style="margin-bottom:30px">Assalomu alaykum!</h2>
+    <input type="text" id="code-input" placeholder="Imtihon kodi (masalan: 123456)">
+    <button class="btn" onclick="enterByCode()">Kirish</button>
+    <button class="btn red" onclick="go('admin-login')">O‘qituvchi kirishi</button>
+  </div>
+</div>
+
+<!-- 2. Admin login -->
+<div id="admin-login" class="page">
+  <div class="header"><button class="back-btn" onclick="go('start')">Left Arrow</button>Admin panel</div>
+  <div style="flex:1;padding:30px">
+    <input type="password" id="admin-pass" placeholder="Parol">
+    <button class="btn" onclick="adminLogin()">Kirish</button>
+  </div>
+</div>
+
+<!-- 3. Admin dashboard -->
+<div id="admin-dash" class="page">
+  <div class="header"><button class="back-btn" onclick="logout()">Left Arrow</button>Mening imtihonlarim</div>
+  <div id="tests-list" style="flex:1;overflow:auto;padding:10px"></div>
+  <button class="btn" onclick="go('create-1')">+ Yangi imtihon yaratish</button>
+</div>
+
+<!-- 4. Test yaratish 1-qadam -->
+<div id="create-1" class="page">
+  <div class="header"><button class="back-btn" onclick="go('admin-dash')">Left Arrow</button>Yangi imtihon</div>
+  <div class="card">
+    <label>Imtihon nomi</label>
+    <input type="text" id="test-name">
+    <label>Umumiy material (PDF)</label>
+    <input type="file" accept=".pdf" id="test-pdf">
+    <label>Javob variantlari</label>
+    <select id="answers-count"><option value="4">4 ta (A-D)</option><option value="5" selected>5 ta (A-E)</option></select>
+    <label>Savollar soni</label>
+    <input type="number" id="q-count" value="30" min="5" max="200">
+    <button class="btn" onclick="nextStep()">Keyingi qadam Right Arrow</button>
+  </div>
+</div>
+
+<!-- 5. Test yaratish 2-qadam -->
+<div id="create-2" class="page">
+  <div class="header"><button class="back-btn" onclick="go('admin-dash')">Left Arrow</button>To‘g‘ri javoblarni belgilang</div>
+  <div class="pdf"><embed id="admin-pdf"></div>
+  <div style="background:#fff;padding:12px 16px">
+    <div style="text-align:center;font-weight:700;margin-bottom:10px">Savol <span id="admin-q">1</span></div>
+    <div class="admin-tools">
+      <div class="tool active" onclick="setType('single')">Circle</div>
+      <div class="tool" onclick="setType('multiple')">Square</div>
+      <div class="tool" onclick="setType('text')">Write</div>
+    </div>
+    <div class="opts" id="admin-opts"></div>
+    <div id="admin-textbox" style="display:none;margin-top:12px">
+      <input type="text" id="admin-text" placeholder="To‘g‘ri javobni yozing...">
+      <button class="btn green" onclick="saveTextAnswer()">Saqlash</button>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="navs" id="admin-nav"></div>
+    <button class="btn red" onclick="saveTest()">SAQLASH</button>
+  </div>
+</div>
+
+<!-- 6. Talaba testi -->
+<div id="student-test" class="page">
+  <div class="pdf"><embed id="student-pdf"></div>
+  <div style="background:#fff;padding:12px 16px">
+    <div style="text-align:center;font-weight:700;margin-bottom:8px">Savol <span id="s-q">1</span> / <span id="s-total">30</span></div>
+    <div class="opts" id="s-opts"></div>
+    <div id="s-textbox" style="display:none;margin-top:10px">
+      <input type="text" id="s-text" placeholder="Javobingizni yozing...">
+      <button class="btn" onclick="saveStudentText()">Saqlash</button>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="navs" id="s-nav"></div>
+    <button class="btn red" onclick="finishTest()">Tugatish</button>
+  </div>
+</div>
+
+<!-- 7. Talaba natijasi -->
+<div id="student-result" class="page">
+  <div class="header">Sizning natijangiz</div>
+  <div style="flex:1;text-align:center;padding:30px">
+    <h1 style="font-size:64px;margin:20px 0" id="perc">87%</h1>
+    <p style="font-size:18px">To‘g‘ri: <b id="cor">26</b> • Xato: <b id="wr">4</b></p>
+    <div class="result-grid" id="result-grid"></div>
+    <button class="btn" onclick="go('start')">Bosh sahifa</button>
+  </div>
+</div>
+
+<!-- 8. Admin natijalar -->
+<div id="admin-results" class="page">
+  <div class="header"><button class="back-btn" onclick="go('admin-dash')">Left Arrow</button>Natijalar</div>
+  <div style="flex:1;overflow:auto;padding:10px" id="results-list"></div>
+</div>
+
+<!-- 9. Test yaratildi -->
+<div id="test-created" class="page">
+  <div class="header">Imtihon yaratildi!</div>
+  <div style="flex:1;padding:30px;text-align:center">
+    <h2>Test muvaffaqiyatli yaratildi</h2>
+    <div class="card" style="text-align:left">
+      <p><b>Nomi:</b> <span id="created-name"></span></p>
+      <p><b>Kod:</b> <span id="created-code"></span></p>
+      <p><b>Link:</b> <input id="created-link" style="width:100%;margin-top:8px" readonly></p>
+    </div>
+    <button class="btn" onclick="copyLink()">Linkni nusxalash</button>
+    <button class="btn green" onclick="go('admin-dash')">Bosh sahifaga</button>
+  </div>
+</div>
+
+<script>
+  let isAdmin = false;
+  let currentTest = null;
+  let studentAnswers = {};
+  let testData = null;
+  let answerType = 'single';
+
+  function go(p){
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+    document.getElementById(p).classList.add('active');
+  }
+
+  // Admin login
+  function adminLogin(){
+    if(document.getElementById('admin-pass').value === '12345'){
+      isAdmin = true;
+      go('admin-dash');
+      loadTests();
+    } else Swal.fire('Xato','Parol noto‘g‘ri!','error');
+  }
+  function logout(){ isAdmin=false; go('start'); }
+
+  // 1-qadam → 2-qadam
+  function nextStep(){
+    const name = document.getElementById('test-name').value.trim();
+    const file = document.getElementById('test-pdf').files[0];
+    const qcount = parseInt(document.getElementById('q-count').value);
+    const acount = parseInt(document.getElementById('answers-count').value);
+    if(!name || !file || qcount<5){ Swal.fire('Xato','Barcha maydonlarni to‘ldiring','warning'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      currentTest = {
+        id: Date.now(),
+        name, pdf: e.target.result,
+        questions: qcount, variants: acount,
+        answers: {}, code: Math.floor(100000 + Math.random()*900000).toString(),
+        results: []
+      };
+      document.getElementById('admin-pdf').src = currentTest.pdf;
+      buildNav('admin-nav', qcount, n=>adminGoto(n));
+      go('create-2');
+      adminGoto(1);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function setType(t){
+    answerType = t;
+    document.querySelectorAll('.tool').forEach(x=>x.classList.remove('active'));
+    event.target.classList.add('active');
+    adminGoto(+document.getElementById('admin-q').textContent);
+  }
+
+  function adminGoto(n){
+    document.querySelectorAll('#admin-nav .n').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('#admin-nav .n')[n-1].classList.add('active');
+    document.getElementById('admin-q').textContent = n;
+    const opts = document.getElementById('admin-opts'); opts.innerHTML='';
+    document.getElementById('admin-textbox').style.display = answerType==='text'?'block':'none';
+    document.getElementById('admin-text').value = currentTest.answers[n]||'';
+    if(answerType!=='text'){
+      'ABCDE'.slice(0,currentTest.variants).split('').forEach(l=>{
+        const d=document.createElement('div');
+        d.className=`o ${answerType==='single'?'circle':'square'}`;
+        d.textContent=l;
+        d.onclick=()=>{ if(answerType==='single') opts.querySelectorAll('.o').forEach(x=>x.classList.remove('active')); d.classList.toggle('active'); saveAdmin(n); };
+        if(currentTest.answers[n]?.includes(l)) d.classList.add('active');
+        opts.appendChild(d);
+      });
+    }
+  }
+
+  function saveAdmin(n){
+    if(answerType==='text') return;
+    const sel = [...document.querySelectorAll('#admin-opts .o.active')].map(x=>x.textContent);
+    currentTest.answers[n] = answerType==='single' ? sel[0] : sel;
+    document.querySelectorAll('#admin-nav .n')[n-1].classList.add('done');
+  }
+  function saveTextAnswer(){
+    const val = document.getElementById('admin-text').value.trim();
+    currentTest.answers[+document.getElementById('admin-q').textContent] = val;
+    document.querySelectorAll('#admin-nav .n')[+document.getElementById('admin-q').textContent-1].classList.add('done');
+  }
+
+  function saveTest(){
+    let tests = JSON.parse(localStorage.getItem('tests')||'[]');
+    tests.push(currentTest);
+    localStorage.setItem('tests', JSON.stringify(tests));
+    document.getElementById('created-name').textContent = currentTest.name;
+    document.getElementById('created-code').textContent = currentTest.code;
+    document.getElementById('created-link').value = `https://t.me/ImtihonBotim?start=test_${currentTest.id}`;
+    go('test-created');
+  }
+
+  function loadTests(){
+    const list = document.getElementById('tests-list'); list.innerHTML='';
+    const tests = JSON.parse(localStorage.getItem('tests')||'[]');
+    tests.forEach(t=>{
+      const div=document.createElement('div'); div.className='card';
+      div.innerHTML = `<b>${t.name}</b> • ${t.questions} savol<br>Kod: ${t.code}<br>
+        <button class="btn small" onclick="share(${t.id})">Ulashish</button>
+        <button class="btn green small" onclick="showResults(${t.id})">Natijalar</button>`;
+      list.appendChild(div);
+    });
+  }
+
+  function share(id){
+    const link = `https://t.me/ImtihonBotim?start=test_${id}`;
+    Swal.fire('Link',`<input value="${link}" style="width:100%;padding:10px">`,'info');
+  }
+
+  function enterByCode(){
+    const code = document.getElementById('code-input').value.trim();
+    const tests = JSON.parse(localStorage.getItem('tests')||'[]');
+    const test = tests.find(t=>t.code===code);
+    if(test) startTest(test);
+    else Swal.fire('Xato','Kod topilmadi','error');
+  }
+
+  function startTest(t){
+    testData = t;
+    document.getElementById('student-pdf').src = t.pdf;
+    document.getElementById('s-total').textContent = t.questions;
+    studentAnswers = {};
+    buildNav('s-nav', t.questions, n=>studentGoto(n));
+    go('student-test');
+    studentGoto(1);
+  }
+
+  function studentGoto(n){
+    document.querySelectorAll('#s-nav .n').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('#s-nav .n')[n-1].classList.add('active');
+    document.getElementById('s-q').textContent = n;
+    loadStudentQ(n);
+  }
+
+  function loadStudentQ(n){
+    const correct = testData.answers[n];
+    const opts = document.getElementById('s-opts'); opts.innerHTML='';
+    document.getElementById('s-textbox').style.display='none';
+    if(typeof correct === 'string' && correct.length>5){
+      document.getElementById('s-textbox').style.display='block';
+      document.getElementById('s-text').value = studentAnswers[n]||'';
+    } else {
+      'ABCDE'.slice(0,testData.variants).split('').forEach(l=>{
+        const d=document.createElement('div');
+        d.className=`o ${Array.isArray(correct)?'square':'circle'}`;
+        d.textContent=l;
+        d.onclick=()=>{ if(!Array.isArray(correct)) opts.querySelectorAll('.o').forEach(x=>x.classList.remove('active')); d.classList.toggle('active'); saveStudent(n); };
+        if(studentAnswers[n] && (Array.isArray(studentAnswers[n])?studentAnswers[n].includes(l):studentAnswers[n]===l)) d.classList.add('active');
+        opts.appendChild(d);
+      });
+    }
+  }
+
+  function saveStudent(n){
+    const sel = [...document.querySelectorAll('#s-opts .o.active')].map(x=>x.textContent);
+    studentAnswers[n] = testData.answers[n] && Array.isArray(testData.answers[n]) ? sel : sel[0];
+    document.querySelectorAll('#s-nav .n')[n-1].classList.add('done');
+  }
+  function saveStudentText(){
+    studentAnswers[+document.getElementById('s-q').textContent] = document.getElementById('s-text').value.trim();
+    document.querySelectorAll('#s-nav .n')[+document.getElementById('s-q').textContent-1].classList.add('done');
+  }
+
+  function finishTest(){
+    Swal.fire({title:'Testni tugatish?',showCancelButton:true}).then(r=>{
+      if(!r.isConfirmed) return;
+
+      // Hisoblash
+      let correctCount = 0;
+      Object.keys(testData.answers).for  (q => {
+        if(JSON.stringify(studentAnswers[q]) === JSON.stringify(testData.answers[q])) correctCount++;
+      });
+      const perc = Math.round(correctCount / testData.questions * 100);
+
+      // Telegram user ma'lumotlari
+      const user = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
+      const userInfo = {
+        id: user.id || 'anon',
+        name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Ismsiz',
+        username: user.username ? '@'+user.username : 'Username yo‘q',
+        correct: correctCount,
+        wrong: testData.questions - correctCount,
+        percentage: perc,
+        date: new Date().toLocaleString('uz-UZ')
+      };
+
+      // Natijani saqlash
+      testData.results = testData.results || [];
+      const idx = testData.results.findIndex(x=>x.id===userInfo.id);
+      if(idx>-1) testData.results[idx] = userInfo;
+      else testData.results.push(userInfo);
+
+      let all = JSON.parse(localStorage.getItem('tests')||'[]');
+      const ti = all.findIndex(x=>x.id===testData.id);
+      all[ti] = testData;
+      localStorage.setItem('tests', JSON.stringify(all));
+
+      // Talabaga ko‘rsatish
+      document.getElementById('perc').textContent = perc+'%';
+      document.getElementById('cor').textContent = correctCount;
+      document.getElementById('wr').textContent = testData.questions - correctCount;
+      const g = document.getElementById('result-grid'); g.innerHTML='';
+      for(let i=1;i<=testData.questions;i++){
+        const d=document.createElement('div'); d.className='n'; d.textContent=i;
+        if(studentAnswers[i]){
+          if(JSON.stringify(studentAnswers[i])===JSON.stringify(testData.answers[i])) d.classList.add('done');
+          else d.classList.add('wrong');
+        }
+        g.appendChild(d);
+      }
+      go('student-result');
+    });
+  }
+
+  function showResults(id){
+    const tests = JSON.parse(localStorage.getItem('tests')||'[]');
+    const test = tests.find(t=>t.id==id);
+    const list = document.getElementById('results-list');
+    if(!test || !test.results?.length){
+      list.innerHTML = '<p style="text-align:center;padding:50px">Hali hech kim ishlamagan</p>';
+      go('admin-results');
+      return;
+    }
+    list.innerHTML = `<div class="card"><b>Jami: ${test.results.length} ta natija</b></div>`;
+    test.results.sort((a,b)=>b.percentage-a.percentage);
+    test.results.forEach((r,i)=>{
+      const div=document.createElement('div'); div.className='card';
+      div.innerHTML = `<b>${i+1}. ${r.name}</b> ${r.username}<br>${r.percentage}% (${r.correct}/${test.questions})<br><small>${r.date}</small>`;
+      list.appendChild(div);
+    });
+    go('admin-results');
+  }
+
+  function buildNav(id, count, fn){
+    const nav=document.getElementById(id); nav.innerHTML='';
+    for(let i=1;i<=count;i++){
+      const b=document.createElement('div'); b.className='n'; b.textContent=i; b.onclick=()=>fn(i); nav.appendChild(b);
+    }
+  }
+
+  function copyLink(){
+    document.getElementById('created-link').select();
+    document.execCommand('copy');
+    Swal.fire('Nusxalandi!','','success');
+  }
+
+  // Telegram WebApp
+  if(window.Telegram?.WebApp){
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+  }
+
+  // Link orqali kirish
+  const urlParams = new URLSearchParams(location.search);
+  if(urlParams.get('test')){
+    const tests = JSON.parse(localStorage.getItem('tests')||'[]');
+    const t = tests.find(x=>x.id==urlParams.get('test'));
+    if(t) startTest(t);
+  }
+</script>
+</body>
+</html>
